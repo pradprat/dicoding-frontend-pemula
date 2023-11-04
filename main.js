@@ -2,7 +2,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const submitForm = document.getElementById("inputBook");
   submitForm.addEventListener("submit", function (event) {
     event.preventDefault();
-    console.log("test");
     onAddBook();
   });
   const searchForm = document.getElementById("searchBook");
@@ -17,21 +16,18 @@ const onAddBook = () => {
   const title = getValue("inputBookTitle");
   const author = getValue("inputBookAuthor");
   const year = getValue("inputBookYear");
-  const read = getCheckedValue("inputBookIsComplete");
+  const isComplete = getCheckedValue("inputBookIsComplete");
   const id = Date.now();
 
   const book = {
     title,
     author,
-    year,
-    read,
+    year: Number(year),
+    isComplete,
     id,
   };
-  if (read) {
-    saveReadBook(book);
-  } else {
-    saveUnreadBook(book);
-  }
+  console.log(book);
+  saveBook(book);
   render();
 };
 const getValue = (id) => {
@@ -40,74 +36,68 @@ const getValue = (id) => {
 const getCheckedValue = (id) => {
   return document.getElementById(id).checked;
 };
-const saveUnreadBook = (book) => {
-  const books = getUnreadBooks();
+const saveBook = (book) => {
+  const books = getBooks();
   books.push(book);
-  localStorage.setItem("unread_books", JSON.stringify(books));
+  localStorage.setItem("books", JSON.stringify(books));
 };
-const saveReadBook = (book) => {
-  const books = getReadBooks();
-  books.push(book);
-  localStorage.setItem("read_books", JSON.stringify(books));
+const getBooks = () => {
+  return JSON.parse(localStorage.getItem("books")) || [];
 };
-const getUnreadBooks = () => {
-  return JSON.parse(localStorage.getItem("unread_books")) || [];
-};
-const getReadBooks = () => {
-  return JSON.parse(localStorage.getItem("read_books")) || [];
-};
-const renderUnreadBooks = () => {
-  const books = getUnreadBooks();
+const renderUnreadBooks = (search = "") => {
+  const books = getBooks();
+  const unreadBooks = books.filter((book) => !book.isComplete);
   const unreadBookList = document.getElementById("incompleteBookshelfList");
   unreadBookList.innerHTML = "";
-  books.forEach((book) => {
-    const bookItem = createUnreadBookItem(book);
-    unreadBookList.innerHTML += bookItem;
-  });
+  unreadBooks
+    .filter((book) => book.author.includes(search))
+    .forEach((book) => {
+      const bookItem = createUnreadBookItem(book);
+      unreadBookList.innerHTML += bookItem;
+    });
 };
-const renderReadBooks = () => {
-  const books = getReadBooks();
+const renderReadBooks = (search = "") => {
+  const books = getBooks();
+  const readBooks = books.filter((book) => book.isComplete);
   const readBookList = document.getElementById("completeBookshelfList");
   readBookList.innerHTML = "";
-  books.forEach((book) => {
-    const bookItem = createReadBookItem(book);
-    readBookList.innerHTML += bookItem;
-  });
+  readBooks
+    .filter((book) => book.author.includes(search))
+    .forEach((book) => {
+      const bookItem = createReadBookItem(book);
+      readBookList.innerHTML += bookItem;
+    });
 };
 const render = () => {
   renderUnreadBooks();
   renderReadBooks();
 };
 const onAddBookToRead = (id) => {
-  const books = getUnreadBooks();
-  const book = books.filter((book) => book.id == id)[0];
-  saveReadBook(book);
-  removeUnreadBook(id);
-  render();
-};
-const onRemoveBook = (id) => {
-  removeUnreadBook(id);
-  removeReadBook(id);
-  render();
-};
-const removeUnreadBook = (id) => {
-  const books = getUnreadBooks();
-  const filteredBooks = books.filter((book) => book.id != id);
-  localStorage.setItem("unread_books", JSON.stringify(filteredBooks));
-  render();
-};
-const removeReadBook = (id) => {
-  const books = getReadBooks();
-  const filteredBooks = books.filter((book) => book.id != id);
-  localStorage.setItem("read_books", JSON.stringify(filteredBooks));
+  const books = getBooks();
+  const book = books.find((book) => book.id == id);
+  if (!book) return;
+  const index = books.indexOf(book);
+  books[index].isComplete = true;
+  localStorage.setItem("books", JSON.stringify(books));
   render();
 };
 const onAddBookToUnread = (id) => {
-  const books = getReadBooks();
-  const book = books.filter((book) => book.id == id)[0];
-  saveUnreadBook(book);
-  removeReadBook(id);
+  const books = getBooks();
+  const book = books.find((book) => book.id == id);
+  if (!book) return;
+  const index = books.indexOf(book);
+  books[index].isComplete = false;
+  localStorage.setItem("books", JSON.stringify(books));
   render();
+};
+const onRemoveBook = (id) => {
+  removeBook(id);
+  render();
+};
+const removeBook = (id) => {
+  const books = getBooks();
+  const filteredBooks = books.filter((book) => book.id != id);
+  localStorage.setItem("books", JSON.stringify(filteredBooks));
 };
 
 const createUnreadBookItem = (book) => {
@@ -134,7 +124,7 @@ const createReadBookItem = (book) => {
 
     <div class="action">
       <button onclick="onAddBookToUnread(${book.id})" class="green" data-id=${book.id}>Belum selesai di Baca</button>
-      <button onclick="removeReadBook(${book.id})" class="red" data-id=${book.id}>Hapus buku</button>
+      <button onclick="onRemoveBook(${book.id})" class="red" data-id=${book.id}>Hapus buku</button>
     </div>
   </article>
   `;
@@ -142,14 +132,6 @@ const createReadBookItem = (book) => {
 
 const onSearchBook = () => {
   const keyword = getValue("searchBookTitle");
-  const books = getUnreadBooks();
-  const filteredBooks = books.filter((book) => {
-    return book.title.toLowerCase().includes(keyword.toLowerCase());
-  });
-  const unreadBookList = document.getElementById("incompleteBookshelfList");
-  unreadBookList.innerHTML = "";
-  filteredBooks.forEach((book) => {
-    const bookItem = createUnreadBookItem(book);
-    unreadBookList.innerHTML += bookItem;
-  });
+  renderUnreadBooks(keyword);
+  renderReadBooks(keyword);
 };
