@@ -50,7 +50,7 @@ const renderUnreadBooks = (search = "") => {
   const unreadBookList = document.getElementById("incompleteBookshelfList");
   unreadBookList.innerHTML = "";
   unreadBooks
-    .filter((book) => book.author.includes(search))
+    .filter((book) => book.title.includes(search))
     .forEach((book) => {
       const bookItem = createUnreadBookItem(book);
       unreadBookList.innerHTML += bookItem;
@@ -62,7 +62,7 @@ const renderReadBooks = (search = "") => {
   const readBookList = document.getElementById("completeBookshelfList");
   readBookList.innerHTML = "";
   readBooks
-    .filter((book) => book.author.includes(search))
+    .filter((book) => book.title.includes(search))
     .forEach((book) => {
       const bookItem = createReadBookItem(book);
       readBookList.innerHTML += bookItem;
